@@ -1,16 +1,10 @@
-import { TextInput } from "react-native";
-import { styled } from "nativewind";
+import { TextInput, TextInputProps } from "react-native";
 
-const StyledInput = styled(TextInput);
-
-export function Input({
-  className,
-  ...props
-}: React.ComponentProps<typeof TextInput>) {
+export function Input({ className, ...props }: TextInputProps) {
   return (
-    <StyledInput
+    <TextInput
       placeholderTextColor="#94a3b8"
-      className={`flex h-10 w-full rounded-md border border-slate-800 bg-transparent px-3 py-2 text-sm text-slate-100 ${className}`}
+      className={`h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base text-foreground file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
       {...props}
     />
   );

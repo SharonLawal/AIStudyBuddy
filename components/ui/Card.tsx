@@ -1,75 +1,36 @@
-import { View, Text } from "react-native";
-import { styled } from "nativewind";
+import { View, Text, ViewProps, TextProps } from "react-native";
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-
-export function Card({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+export function Card({ className, ...props }: ViewProps) {
   return (
-    <StyledView
-      className={`bg-slate-900 rounded-xl border border-slate-800 shadow-sm ${className}`}
-    >
-      {children}
-    </StyledView>
+    <View
+      className={`bg-card rounded-xl border border-border shadow-sm ${className}`}
+      {...props}
+    />
   );
 }
 
-export function CardHeader({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+export function CardHeader({ className, ...props }: ViewProps) {
+  return <View className={`p-6 pb-2 ${className}`} {...props} />;
+}
+
+export function CardTitle({ className, ...props }: TextProps) {
   return (
-    <StyledView className={`p-6 pb-4 ${className}`}>{children}</StyledView>
+    <Text
+      className={`text-lg font-semibold text-card-foreground leading-none ${className}`}
+      {...props}
+    />
   );
 }
 
-export function CardTitle({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
+export function CardDescription({ className, ...props }: TextProps) {
   return (
-    <StyledText
-      className={`text-lg font-semibold text-slate-100 leading-none ${className}`}
-    >
-      {children}
-    </StyledText>
+    <Text
+      className={`text-sm text-muted-foreground mt-1 ${className}`}
+      {...props}
+    />
   );
 }
 
-export function CardDescription({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <StyledText className={`text-sm text-slate-400 mt-1 ${className}`}>
-      {children}
-    </StyledText>
-  );
-}
-
-export function CardContent({
-  className,
-  children,
-}: {
-  className?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <StyledView className={`p-6 pt-0 ${className}`}>{children}</StyledView>
-  );
+export function CardContent({ className, ...props }: ViewProps) {
+  return <View className={`p-6 pt-0 ${className}`} {...props} />;
 }

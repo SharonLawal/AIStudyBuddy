@@ -1,32 +1,31 @@
-import { TouchableOpacity, Text } from "react-native";
-import { styled } from "nativewind";
+import { TouchableOpacity, Text, TouchableOpacityProps } from "react-native";
 
-const StyledTouchableOpacity = styled(TouchableOpacity);
-const StyledText = styled(Text);
+interface ButtonProps extends TouchableOpacityProps {
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+}
 
 export function Button({
-  onPress,
+  className,
   variant = "default",
   size = "default",
-  className,
   children,
-  disabled,
-}: {
-  onPress?: () => void;
-  variant?: "default" | "outline" | "ghost" | "destructive" | "secondary";
-  size?: "default" | "sm" | "lg" | "icon";
-  className?: string;
-  children: React.ReactNode;
-  disabled?: boolean;
-}) {
-  const baseStyles = "flex-row items-center justify-center rounded-lg";
-
+  ...props
+}: ButtonProps) {
   const variants = {
-    default: "bg-indigo-600",
-    destructive: "bg-red-500",
-    outline: "border border-slate-700 bg-transparent",
-    secondary: "bg-teal-400",
-    ghost: "bg-transparent",
+    default: "bg-primary",
+    destructive: "bg-destructive",
+    outline:
+      "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+    secondary: "bg-secondary",
+    ghost: "hover:bg-accent hover:text-accent-foreground",
+    link: "text-primary underline-offset-4 hover:underline",
   };
 
   const sizes = {
@@ -37,24 +36,24 @@ export function Button({
   };
 
   const textColors = {
-    default: "text-white",
-    destructive: "text-white",
-    outline: "text-slate-100",
-    secondary: "text-slate-900",
-    ghost: "text-slate-100",
+    default: "text-primary-foreground",
+    destructive: "text-destructive-foreground",
+    outline: "text-foreground",
+    secondary: "text-secondary-foreground",
+    ghost: "text-foreground",
+    link: "text-primary",
   };
 
   return (
-    <StyledTouchableOpacity
-      onPress={onPress}
-      disabled={disabled}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${
-        disabled ? "opacity-50" : ""
-      } ${className}`}
+    <TouchableOpacity
+      className={`flex-row items-center justify-center rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`}
+      {...props}
     >
-      <StyledText className={`font-medium ${textColors[variant]}`}>
-        {children}
-      </StyledText>
-    </StyledTouchableOpacity>
+      {typeof children === "string" ? (
+        <Text className={`font-medium ${textColors[variant]}`}>{children}</Text>
+      ) : (
+        children
+      )}
+    </TouchableOpacity>
   );
 }

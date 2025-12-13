@@ -1,4 +1,4 @@
-import { View, ScrollView, Text } from "react-native";
+import { View, Text, ScrollView } from "react-native";
 import {
   Sparkles,
   Clock,
@@ -7,17 +7,21 @@ import {
   Brain,
   ChevronRight,
 } from "lucide-react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
+} from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
 
-// Mock Data
+const mockStats = {
+  focusTime: "2h 15m",
+  tasksCompleted: 7,
+  streak: 12,
+};
+
 const weeklyData = [
   { day: "Mon", hours: 3.5 },
   { day: "Tue", hours: 2.0 },
@@ -27,100 +31,150 @@ const weeklyData = [
   { day: "Sat", hours: 2.8 },
   { day: "Sun", hours: 1.2 },
 ];
+
 const maxHours = Math.max(...weeklyData.map((d) => d.hours));
 
-export default function Dashboard() {
-  return (
-    <SafeAreaView className="flex-1 bg-slate-950 p-4">
-      <ScrollView contentContainerClassName="gap-4 pb-20">
-        {/* Header */}
-        <View>
-          <Text className="text-2xl font-bold text-white">
-            Good Morning, Alex
-          </Text>
-          <Text className="text-slate-400 text-sm">
-            Let's make today productive!
-          </Text>
-        </View>
+export default function DashboardScreen() {
+  const currentHour = new Date().getHours();
+  const greeting =
+    currentHour < 12
+      ? "Good Morning"
+      : currentHour < 17
+        ? "Good Afternoon"
+        : "Good Evening";
 
-        {/* Daily Insight */}
-        <Card className="bg-indigo-600 border-indigo-500">
-          <CardContent className="flex-row items-start gap-3 pt-6">
-            <View className="p-2 bg-white/20 rounded-lg">
-              <Sparkles size={20} color="white" />
+  return (
+    <ScrollView
+      className="flex-1 bg-background"
+      contentContainerClassName="p-4 gap-4"
+    >
+      {/* Header */}
+      <View className="space-y-1">
+        <Text className="text-2xl font-bold text-foreground">
+          {greeting}, Alex
+        </Text>
+        <Text className="text-muted-foreground text-sm">
+          Let's make today productive!
+        </Text>
+      </View>
+
+      {/* Daily Insight Card */}
+      <Card className="bg-primary border-0">
+        <CardContent className="p-4 flex-row items-start gap-3">
+          <View className="p-2 bg-primary-foreground/20 rounded-lg">
+            <Sparkles size={20} className="text-primary-foreground" />
+          </View>
+          <View className="flex-1">
+            <Text className="font-semibold text-sm text-primary-foreground">
+              Daily Insight
+            </Text>
+            <Text className="text-sm text-primary-foreground/90 mt-1">
+              You're most productive between 10 AM and 12 PM. Schedule important
+              tasks during this window!
+            </Text>
+          </View>
+        </CardContent>
+      </Card>
+
+      {/* Stats Overview */}
+      <View className="flex-row gap-3">
+        <StatsCard
+          icon={Clock}
+          value={mockStats.focusTime}
+          label="Focus Today"
+          iconColor="text-primary"
+          bg="bg-primary/10"
+        />
+        <StatsCard
+          icon={CheckCircle2}
+          value={mockStats.tasksCompleted}
+          label="Tasks Done"
+          iconColor="text-secondary"
+          bg="bg-secondary/20"
+        />
+        <StatsCard
+          icon={Flame}
+          value={mockStats.streak}
+          label="Day Streak"
+          iconColor="text-destructive"
+          bg="bg-destructive/20"
+        />
+      </View>
+
+      {/* Weekly Activity Chart */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle>Weekly Activity</CardTitle>
+          <CardDescription>Your study hours this week</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <View className="flex-row items-end justify-between gap-2 h-32 pt-4">
+            {weeklyData.map((item) => (
+              <View key={item.day} className="flex-1 items-center gap-2">
+                <View className="w-full bg-muted rounded-t-md flex-1 justify-end overflow-hidden">
+                  <View
+                    className="w-full bg-primary rounded-t-md"
+                    style={{ height: `${(item.hours / maxHours) * 100}%` }}
+                  />
+                </View>
+                <Text className="text-xs text-muted-foreground">
+                  {item.day}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </CardContent>
+      </Card>
+
+      {/* AI Suggestion Card */}
+      <Card className="bg-secondary/10 border-secondary/30">
+        <CardContent className="p-4">
+          <View className="flex-row items-center gap-3">
+            <View className="p-3 bg-secondary/20 rounded-xl">
+              <Brain size={24} className="text-secondary" />
             </View>
             <View className="flex-1">
-              <Text className="font-bold text-white mb-1">Daily Insight</Text>
-              <Text className="text-white/90 text-sm">
-                You're most productive between 10 AM and 12 PM.
+              <Text className="font-semibold text-foreground">
+                Recommended Next Session
+              </Text>
+              <Text className="text-sm text-muted-foreground">
+                Biology - Chapter 4 Review
+              </Text>
+              <Text className="text-xs text-muted-foreground mt-1">
+                Suggested: 45 minutes
               </Text>
             </View>
-          </CardContent>
-        </Card>
+          </View>
+          <Button
+            className="w-full mt-4 bg-secondary"
+            onPress={() => console.log("Start AI Session")}
+          >
+            <Text className="text-secondary-foreground font-medium">
+              Start Now
+            </Text>{" "}
+            <ChevronRight
+              size={16}
+              className="text-secondary-foreground ml-1"
+            />
+          </Button>
+        </CardContent>
+      </Card>
+    </ScrollView>
+  );
+}
 
-        {/* Stats Grid */}
-        <View className="flex-row gap-3">
-          {[
-            { label: "Focus", value: "2h 15m", icon: Clock, color: "#818cf8" },
-            { label: "Done", value: "7", icon: CheckCircle2, color: "#2dd4bf" },
-            { label: "Streak", value: "12", icon: Flame, color: "#fbbf24" },
-          ].map((stat, i) => (
-            <Card key={i} className="flex-1 bg-slate-900 border-slate-800">
-              <CardContent className="items-center py-4 pt-4 px-2">
-                <stat.icon size={20} color={stat.color} />
-                <Text className="text-lg font-bold text-white mt-2">
-                  {stat.value}
-                </Text>
-                <Text className="text-xs text-slate-400">{stat.label}</Text>
-              </CardContent>
-            </Card>
-          ))}
+function StatsCard({ icon: Icon, value, label, iconColor, bg }: any) {
+  return (
+    <Card className="flex-1 bg-card">
+      <CardContent className="p-3 items-center justify-center">
+        <View
+          className={`w-10 h-10 rounded-full ${bg} items-center justify-center mb-2`}
+        >
+          <Icon size={20} className={iconColor} />
         </View>
-
-        {/* Chart */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Activity</CardTitle>
-            <CardDescription>Your study hours</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <View className="flex-row items-end justify-between h-32 gap-2">
-              {weeklyData.map((item, i) => (
-                <View key={i} className="flex-1 items-center gap-2">
-                  <View className="w-full bg-slate-800 rounded-t-sm h-full justify-end overflow-hidden">
-                    <View
-                      className="w-full bg-indigo-500 rounded-t-sm"
-                      style={{ height: `${(item.hours / maxHours) * 100}%` }}
-                    />
-                  </View>
-                  <Text className="text-xs text-slate-500">
-                    {item.day.charAt(0)}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </CardContent>
-        </Card>
-
-        {/* Suggestion */}
-        <Card className="bg-teal-900/20 border-teal-800/50">
-          <CardContent className="pt-6">
-            <View className="flex-row items-center gap-3">
-              <Brain size={24} color="#2dd4bf" />
-              <View>
-                <Text className="font-bold text-white">
-                  Biology - Chapter 4
-                </Text>
-                <Text className="text-xs text-teal-400">Suggested: 45 min</Text>
-              </View>
-            </View>
-            <Button className="mt-4 bg-teal-500" onPress={() => {}}>
-              <Text className="mr-2">Start Now</Text>
-              <ChevronRight size={16} color="white" />
-            </Button>
-          </CardContent>
-        </Card>
-      </ScrollView>
-    </SafeAreaView>
+        <Text className="text-lg font-bold text-foreground">{value}</Text>
+        <Text className="text-xs text-muted-foreground">{label}</Text>
+      </CardContent>
+    </Card>
   );
 }

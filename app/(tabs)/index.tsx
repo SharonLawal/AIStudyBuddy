@@ -151,7 +151,7 @@ export default function DashboardScreen() {
           >
             <Text className="text-secondary-foreground font-medium">
               Start Now
-            </Text>{" "}
+            </Text>
             <ChevronRight
               size={16}
               className="text-secondary-foreground ml-1"

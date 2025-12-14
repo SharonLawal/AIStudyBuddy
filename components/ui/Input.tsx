@@ -1,4 +1,4 @@
-import { TextInput, TextInputProps, View } from "react-native";
+import { TextInput, TextInputProps } from "react-native";
 import { cn } from "../../libs/utils";
 
 export function Input({ className, ...props }: TextInputProps) {
@@ -13,3 +13,4 @@ export function Input({ className, ...props }: TextInputProps) {
     />
   );
 }
+

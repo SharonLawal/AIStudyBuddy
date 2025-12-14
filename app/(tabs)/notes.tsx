@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList } from "react-native"
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import { Sparkles, Plus, Trash2, Check, Square } from "lucide-react-native";
+import { Sparkles, Plus, Trash2, Check, Square, Brain } from "lucide-react-native";
 
 interface Task { id: string; text: string; completed: boolean; priority: "high" | "medium" | "low"; }
 
@@ -13,7 +13,7 @@ const mockTasks: Task[] = [
   { id: "3", text: "Read 20 pages of History", completed: false, priority: "medium" },
 ];
 
-const priorityColors = {
+const priorityColors: Record<string, string> = {
   high: "bg-destructive/20 text-destructive",
   medium: "bg-yellow-500/20 text-yellow-600",
   low: "bg-secondary/20 text-secondary",
@@ -42,13 +42,13 @@ export default function NotesScreen() {
         <Text className="text-muted-foreground text-sm">Stay organized, stay ahead</Text>
       </View>
 
-      {/* Segmented Control */}
+      {/* Segmented Control - REMOVED 'shadow-sm' and 'transition-all' to fix crash */}
       <View className="flex-row p-1 bg-muted rounded-lg">
         {["tasks", "notes"].map((mode) => (
           <TouchableOpacity
             key={mode}
             onPress={() => setViewMode(mode as any)}
-            className={`flex-1 py-2 rounded-md items-center ${viewMode === mode ? "bg-card shadow-sm" : ""}`}
+            className={`flex-1 py-2 rounded-md items-center ${viewMode === mode ? "bg-card" : ""}`}
           >
             <Text className={`text-sm font-medium ${viewMode === mode ? "text-foreground" : "text-muted-foreground"}`}>
               {mode === "tasks" ? "To-Do List" : "Quick Notes"}
@@ -101,12 +101,13 @@ export default function NotesScreen() {
               />
             </CardContent>
           </Card>
+          
           <View className="flex-row gap-2">
-            <Button variant="outline" className="flex-1 flex-row gap-2">
+            <Button variant="outline" className="flex-1 gap-2">
               <Sparkles size={16} className="text-foreground" />
               <Text className="text-foreground font-medium">AI Summarize</Text>
             </Button>
-            <Button variant="outline" className="flex-1 flex-row gap-2">
+            <Button variant="outline" className="flex-1 gap-2">
               <Brain size={16} className="text-foreground" />
               <Text className="text-foreground font-medium">Quiz Me</Text>
             </Button>

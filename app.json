@@ -2,6 +2,7 @@
   "expo": {
     "name": "AIStudyBuddy",
     "slug": "AIStudyBuddy",
+    "scheme": "aistudybuddy",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -28,7 +29,8 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-secure-store"
     ]
   }
 }

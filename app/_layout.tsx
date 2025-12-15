@@ -1,12 +1,35 @@
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { useEffect } from 'react';
+import { Slot, useRouter, useSegments } from 'expo-router';
+import { AuthProvider, useAuth } from '../providers/AuthProvider';
 import "../global.css";
+import * as Linking from 'expo-linking';
 
-export default function Layout() {
+function RootLayoutNav() {
+  const { session, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const inAuthGroup = segments[0] === '(auth)';
+    
+    if (!session && !inAuthGroup) {
+      // Redirect to login if not authenticated
+      router.replace('/(auth)/login');
+    } else if (session && inAuthGroup) {
+      // Redirect to dashboard if authenticated
+      router.replace('/(tabs)');
+    }
+  }, [session, loading, segments]);
+
+  return <Slot />;
+}
+
+export default function RootLayout() {
   return (
-    <>
-      <Stack screenOptions={{ headerShown: false }} />
-      <StatusBar style="light" />
-    </>
+    <AuthProvider>
+      <RootLayoutNav />
+    </AuthProvider>
   );
 }

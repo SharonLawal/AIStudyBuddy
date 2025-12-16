@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../providers/AuthProvider';
+import { ToastProvider } from '../components/ui/Toast';
 import "../global.css";
 
 function RootLayoutNav() {
@@ -22,13 +24,16 @@ function RootLayoutNav() {
     }
   }, [session, loading, segments]);
 
-  return <Slot />;
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <ToastProvider>
+        <RootLayoutNav />
+        <StatusBar style="auto" /> 
+      </ToastProvider>
     </AuthProvider>
   );
 }

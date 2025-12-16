@@ -1,30 +1,37 @@
 import { View, Text, Image } from "react-native";
-import { styled } from "nativewind";
 
-const StyledView = styled(View);
-const StyledText = styled(Text);
-const StyledImage = styled(Image);
-
-export function Avatar({ className, children }: any) {
+export function Avatar({
+  className,
+  children,
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <StyledView
+    <View
       className={`h-10 w-10 rounded-full overflow-hidden bg-muted justify-center items-center ${className}`}
     >
       {children}
-    </StyledView>
+    </View>
   );
 }
 
 export function AvatarImage({ src }: { src: any }) {
-  return <StyledImage source={src} className="h-full w-full" />;
+  return <Image source={src} className="h-full w-full" resizeMode="cover" />;
 }
 
-export function AvatarFallback({ children, className }: any) {
+export function AvatarFallback({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <StyledView
+    <View
       className={`h-full w-full justify-center items-center bg-muted ${className}`}
     >
-      <StyledText className="text-muted-foreground">{children}</StyledText>
-    </StyledView>
+      <Text className="text-muted-foreground font-medium">{children}</Text>
+    </View>
   );
 }

@@ -32,7 +32,6 @@
     --radius: 0.75rem;
   }
 
-  /* ✅ FIXED: Use .dark instead of .dark:root */
   .dark {
     /* DARK MODE */
     --background: 224 71% 4%;

@@ -3,14 +3,37 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
   ThemeProvider,
-  DarkTheme,
   DefaultTheme,
+  DarkTheme,
+  Theme,
 } from "@react-navigation/native";
 import { useColorScheme } from "nativewind";
 import { AuthProvider, useAuth } from "../providers/AuthProvider";
 import { ToastProvider } from "../components/ui/Toast";
 import { NotificationProvider } from "../providers/NotificationProvider";
 import "../global.css";
+
+const MyDarkTheme: Theme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    background: "hsl(240, 10%, 10%)",
+    card: "hsl(240, 10%, 12%)", 
+    text: "hsl(0, 0%, 98%)",
+    border: "hsl(240, 3.7%, 15.9%)",
+  },
+};
+
+const MyLightTheme: Theme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: "hsl(0, 0%, 100%)",
+    card: "hsl(0, 0%, 100%)",
+    text: "hsl(240, 10%, 3.9%)",
+    border: "hsl(240, 5.9%, 90%)",
+  },
+};
 
 function RootLayoutNav() {
   const { session, loading } = useAuth();
@@ -29,7 +52,7 @@ function RootLayoutNav() {
   }, [session, loading, segments]);
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? MyDarkTheme : MyLightTheme}>
       <Stack screenOptions={{ headerShown: false }} />
     </ThemeProvider>
   );

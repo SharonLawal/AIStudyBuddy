@@ -29,7 +29,6 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const [insight, setInsight] = useState("");
   const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     setInsight(insights[Math.floor(Math.random() * insights.length)]);

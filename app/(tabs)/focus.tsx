@@ -2,15 +2,19 @@ import { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Alert } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Play, Pause, RotateCcw } from "lucide-react-native";
+import { useColorScheme } from "nativewind";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
-import Svg, { Circle } from "react-native-svg";
+import { CircularTimer } from "../../components/focus/CircularTimer";
 
 export default function FocusScreen() {
   const [minutes, setMinutes] = useState(25);
   const [seconds, setSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
   const [customTime, setCustomTime] = useState("");
+
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -20,7 +24,7 @@ export default function FocusScreen() {
           if (minutes === 0) {
             clearInterval(interval);
             setIsActive(false);
-            Alert.alert("Focus Time Completed!", "Great job! Take a break.");
+            Alert.alert("Finished!", "Good focus session!");
           } else {
             setMinutes(minutes - 1);
             setSeconds(59);
@@ -33,14 +37,6 @@ export default function FocusScreen() {
     return () => clearInterval(interval);
   }, [isActive, minutes, seconds]);
 
-  const toggleTimer = () => setIsActive(!isActive);
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setMinutes(25);
-    setSeconds(0);
-  };
-
   const setCustomDuration = () => {
     const time = parseInt(customTime);
     if (!isNaN(time) && time > 0) {
@@ -51,69 +47,49 @@ export default function FocusScreen() {
     }
   };
 
-  const radius = 100;
-  const circumference = 2 * Math.PI * radius;
-  const timeLeft = minutes * 60 + seconds;
-  const totalTime = 25 * 60;
-  const progress = ((totalTime - timeLeft) / totalTime) * 100;
-
-  const formatTime = (time: number) => {
-    const mins = Math.floor(time / 60);
-    const secs = time % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
-  const isRunning = isActive && timeLeft > 0;
-
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-1 items-center justify-center p-6 gap-8">
-        {/* Header */}
+      <View className="flex-1 items-center justify-center p-6 gap-10">
         <View className="items-center">
           <Text className="text-3xl font-bold text-foreground">
             Focus Timer
           </Text>
-          <Text className="text-muted-foreground">
-            Stay productive & focused
-          </Text>
+          <Text className="text-muted-foreground">Stay in the zone</Text>
         </View>
 
-        {/* Timer Circle - Neumorphic Style compatible with Dark Mode */}
-        <View className="w-64 h-64 rounded-full border-[8px] border-primary/20 items-center justify-center bg-card shadow-xl dark:shadow-none dark:border-primary/30">
-          <Text className="text-6xl font-bold text-primary tabular-nums">
-            {String(minutes).padStart(2, "0")}:
-            {String(seconds).padStart(2, "0")}
-          </Text>
-          <Text className="text-sm text-muted-foreground mt-2 font-medium uppercase tracking-widest">
-            {isActive ? "Running" : "Paused"}
-          </Text>
-        </View>
+        <CircularTimer
+          minutes={minutes}
+          seconds={seconds}
+          isActive={isActive}
+        />
 
-        {/* Controls */}
-        <View className="flex-row gap-6">
+        <View className="flex-row gap-6 items-center">
           <TouchableOpacity
-            onPress={toggleTimer}
-            className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-lg shadow-primary/30"
-          >
-            {isActive ? (
-              <Pause size={28} color="white" />
-            ) : (
-              <Play size={28} color="white" className="ml-1" />
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={resetTimer}
+            onPress={() => {
+              setIsActive(false);
+              setMinutes(25);
+              setSeconds(0);
+            }}
             className="w-16 h-16 bg-secondary rounded-full items-center justify-center"
           >
-            <RotateCcw size={24} className="text-secondary-foreground" />
+            <RotateCcw size={22} color={isDark ? "#e2e8f0" : "#475569"} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setIsActive(!isActive)}
+            className="w-16 h-16 bg-primary rounded-full items-center justify-center shadow-lg shadow-primary/3"
+          >
+            {isActive ? (
+              <Pause size={32} color="white" fill="white" />
+            ) : (
+              <Play size={32} color="white" fill="white" className="ml-1" />
+            )}
           </TouchableOpacity>
         </View>
 
-        {/* Custom Input */}
-        <View className="w-full max-w-xs gap-3">
+        <View className="w-full max-w-sm gap-2">
           <Text className="text-foreground font-medium ml-1">
-            Set Custom Time (min)
+            Set Duration (min)
           </Text>
           <View className="flex-row gap-3">
             <Input
@@ -121,12 +97,12 @@ export default function FocusScreen() {
               onChangeText={setCustomTime}
               placeholder="25"
               keyboardType="number-pad"
-              className="flex-1 text-center font-bold h-14 text-lg bg-muted border-border"
+              className="flex-1 text-center font-bold text-lg h-14 bg-muted/50 border-border dark:bg-muted/30"
             />
             <Button
               onPress={setCustomDuration}
               variant="outline"
-              className="w-24 border-primary/50 h-14"
+              className="w-24 h-14 border-primary/30 dark:border-white/10"
             >
               <Text className="text-primary font-bold">Set</Text>
             </Button>

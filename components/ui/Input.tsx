@@ -1,15 +1,20 @@
-import { TextInput, TextInputProps } from "react-native";
-import { cn } from "../../libs/utils";
+import { TextInput, TextInputProps, View } from 'react-native';
 
-export function Input({ className, ...props }: TextInputProps) {
+interface InputProps extends TextInputProps {
+  className?: string;
+  icon?: React.ReactNode; // New prop for icons
+}
+
+export function Input({ className, icon, ...props }: InputProps) {
   return (
-    <TextInput
-      className={cn(
-        "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
-        className
-      )}
-      placeholderTextColor="#9ca3af"
-      {...props}
-    />
+    <View className={`flex-row items-center bg-muted/50 rounded-2xl border border-transparent focus:border-primary h-14 px-4 ${className}`}>
+      {icon && <View className="mr-3 text-muted-foreground">{icon}</View>}
+      
+      <TextInput
+        placeholderTextColor="#94a3b8" 
+        className="flex-1 text-foreground text-base h-full font-medium"
+        {...props}
+      />
+    </View>
   );
 }

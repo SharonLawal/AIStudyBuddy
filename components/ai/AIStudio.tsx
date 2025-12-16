@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { View, Text, ScrollView, TextInput, Alert, ActivityIndicator, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TextInput, ActivityIndicator, TouchableOpacity } from "react-native";
 import * as DocumentPicker from 'expo-document-picker';
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent } from "../ui/Card";
 import { Upload, Sparkles, Brain, X } from "lucide-react-native";
 import { AIService } from "../../libs/ai";
+import { useNotification } from '../../providers/NotificationProvider';
 
 export function AIStudio() {
   const [loading, setLoading] = useState(false);
@@ -13,6 +14,7 @@ export function AIStudio() {
   const [noteContent, setNoteContent] = useState("");
   const [aiResult, setAiResult] = useState<string | null>(null);
   const [activeAiTab, setActiveAiTab] = useState<"summary" | "quiz">("summary");
+  const { showNotification } = useNotification();
 
   async function handleFileUpload() {
     try {
@@ -26,13 +28,13 @@ export function AIStudio() {
         setNoteContent(`(File loaded: ${result.assets[0].name})\n\n[Content placeholder]`);
       }
     } catch (err) {
-      Alert.alert("Error", "Failed to pick file");
+      showNotification('error', 'Error', 'Failed to pick file');
     }
   }
 
   async function generateAIContent() {
     if (!noteContent.trim()) {
-      Alert.alert("Empty Note", "Please type some notes or upload a file first.");
+      showNotification('error', 'Empty Note', 'Please type some notes or upload a file first.');
       return;
     }
 
@@ -47,7 +49,7 @@ export function AIStudio() {
         setAiResult(JSON.stringify(quiz)); 
       }
     } catch (e) {
-      Alert.alert("AI Error", "Failed to generate content.");
+      showNotification('error', 'AI Error', 'Failed to generate content.');
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import { View, Text, Switch, ScrollView, Image } from "react-native";
+import { View, Text, Switch, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import { Card, CardContent } from "../../components/ui/Card";

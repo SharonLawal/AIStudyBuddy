@@ -4,23 +4,23 @@
 
 @layer base {
   :root {
-    /* LIGHT MODE - Vibrant & Clean */
-    --background: 210 40% 98%;    /* Off-white background */
-    --foreground: 222 47% 11%;    /* Deep Navy text */
+    /* LIGHT MODE */
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
     
-    --card: 0 0% 100%;            /* Pure White cards */
+    --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
     
-    --primary: 246 80% 60%;       /* Vibrant Purple */
+    --primary: 246 80% 60%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 199 89% 48%;     /* Sky Blue */
+    --secondary: 199 89% 48%;
     --secondary-foreground: 210 40% 98%;
     
-    --muted: 210 40% 93%;         /* Light Gray for inputs/bg */
+    --muted: 210 40% 96.1%;
     --muted-foreground: 215 16% 47%;
     
-    --accent: 262 83% 58%;        /* Soft Violet */
+    --accent: 246 80% 60%;
     --accent-foreground: 210 40% 98%;
     
     --destructive: 0 84% 60%;
@@ -32,31 +32,32 @@
     --radius: 0.75rem;
   }
 
-  .dark:root {
-    /* DARK MODE - Deep & Contrast */
-    --background: 222 47% 11%;    /* Deep Navy background */
-    --foreground: 210 40% 98%;    /* Off-white text */
+  /* ✅ FIXED: Use .dark instead of .dark:root */
+  .dark {
+    /* DARK MODE */
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
     
-    --card: 217 33% 17%;          /* Dark Slate cards */
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
     
-    --primary: 246 80% 60%;       /* Purple stays vibrant */
+    --primary: 263 70% 50%;
     --primary-foreground: 210 40% 98%;
     
-    --secondary: 199 89% 48%;     
+    --secondary: 199 89% 48%;
     --secondary-foreground: 210 40% 98%;
     
-    --muted: 217 33% 22%;         /* Darker Slate for inputs */
+    --muted: 217 33% 17%;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 262 83% 58%;
+    --accent: 217 33% 17%;
     --accent-foreground: 210 40% 98%;
     
-    --destructive: 0 63% 31%;
+    --destructive: 0 62% 30%;
     --destructive-foreground: 210 40% 98%;
     
-    --border: 217 33% 22%;
-    --input: 217 33% 22%;
-    --ring: 212 27% 84%;
+    --border: 217 33% 20%;
+    --input: 217 33% 20%;
+    --ring: 224 76% 48%;
   }
 }

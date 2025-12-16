@@ -5,7 +5,9 @@ import {
   FlatList,
   Modal,
   TouchableOpacity,
+  Alert,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -19,12 +21,11 @@ import {
   GraduationCap,
   Coffee,
   Dumbbell,
-  Calendar,
   Clock,
+  Calendar,
 } from "lucide-react-native";
 import { supabase } from "../../libs/supabase";
 import { useAuth } from "../../providers/AuthProvider";
-import { useNotification } from "../../providers/NotificationProvider";
 
 const categoryConfig: any = {
   class: {
@@ -57,20 +58,20 @@ export default function PlannerScreen() {
   const { user } = useAuth();
   const [schedule, setSchedule] = useState<any[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // Form State
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("study");
-
-  // Time Picker State
   const [startTime, setStartTime] = useState(new Date());
   const [endTime, setEndTime] = useState(
     new Date(new Date().setHours(new Date().getHours() + 1))
   );
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
-
-  const { showNotification } = useNotification();
+  const [eventDate, setEventDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     if (user) fetchSchedule();
@@ -80,11 +81,59 @@ export default function PlannerScreen() {
     const { data } = await supabase
       .from("schedule")
       .select("*")
+      .order("date", { ascending: true }) // Order by date first
       .order("start_time", { ascending: true });
+
     if (data) setSchedule(data);
   }
 
-  // Format Date object to "HH:MM" string for display/storage
+  // Format Date "YYYY-MM-DD"
+  const formatDate = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  // Format Date for Display "Mon, Oct 2"
+  const displayDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  // Parse "HH:MM AM/PM" back to Date object for editing
+  const parseTimeStr = (timeStr: string) => {
+    const d = new Date();
+    const [time, modifier] = timeStr.split(" ");
+    let [hours, minutes] = time.split(":");
+    let h = parseInt(hours);
+    if (modifier === "PM" && h < 12) h += 12;
+    if (modifier === "AM" && h === 12) h = 0;
+    d.setHours(h, parseInt(minutes));
+    return d;
+  };
+
+  // Open modal for Creating
+  const openCreateModal = () => {
+    setEditingId(null);
+    setTitle("");
+    setCategory("study");
+    setStartTime(new Date());
+    setEndTime(new Date(new Date().setHours(new Date().getHours() + 1)));
+    setModalVisible(true);
+  };
+
+  // Open modal for Editing
+  const openEditModal = (item: any) => {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setCategory(item.category);
+    setStartTime(parseTimeStr(item.start_time));
+    setEndTime(parseTimeStr(item.end_time));
+    setModalVisible(true);
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {
       hour: "2-digit",
@@ -93,38 +142,68 @@ export default function PlannerScreen() {
     });
   };
 
-  async function addItem() {
+  async function handleSave() {
     if (!title.trim()) {
-      showNotification('error', 'Required', 'Please enter a title for your event.');
+      Alert.alert("Required", "Please enter a title.");
       return;
     }
+    setLoading(true);
 
-    const { data, error } = await supabase
-      .from("schedule")
-      .insert([
-        {
-          user_id: user?.id,
-          title,
-          start_time: formatTime(startTime),
-          end_time: formatTime(endTime),
-          category,
-          type: "fixed",
-        },
-      ])
-      .select();
+    const eventData = {
+      user_id: user?.id,
+      title,
+      start_time: formatTime(startTime),
+      end_time: formatTime(endTime),
+      category,
+      type: "fixed",
+    };
 
-    if (data) {
-      setSchedule(
-        [...schedule, data[0]].sort((a, b) =>
-          a.start_time.localeCompare(b.start_time)
-        )
-      );
-      setModalVisible(false);
-      setTitle("");
+    let error;
+    if (editingId) {
+      // Update existing
+      const { error: updateError } = await supabase
+        .from("schedule")
+        .update(eventData)
+        .eq("id", editingId);
+      error = updateError;
+    } else {
+      // Insert new
+      const { error: insertError } = await supabase
+        .from("schedule")
+        .insert([eventData]);
+      error = insertError;
     }
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      fetchSchedule(); // Refresh list
+      setModalVisible(false);
+    }
+    setLoading(false);
   }
 
-  // Handle Time Selection
+  const deleteItem = async () => {
+    if (!editingId) return;
+    Alert.alert("Delete", "Are you sure?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await supabase.from("schedule").delete().eq("id", editingId);
+          fetchSchedule();
+          setModalVisible(false);
+        },
+      },
+    ]);
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") setShowDatePicker(false);
+    if (selectedDate) setEventDate(selectedDate);
+  };
+
   const onTimeChange = (
     event: any,
     selectedDate?: Date,
@@ -134,7 +213,6 @@ export default function PlannerScreen() {
       if (type === "start") setShowStartPicker(false);
       else setShowEndPicker(false);
     }
-
     if (selectedDate) {
       if (type === "start") setStartTime(selectedDate);
       else setEndTime(selectedDate);
@@ -153,13 +231,12 @@ export default function PlannerScreen() {
           <Button
             size="icon"
             className="rounded-full h-12 w-12 bg-primary shadow-lg"
-            onPress={() => setModalVisible(true)}
+            onPress={openCreateModal}
           >
             <Plus size={24} className="text-white" />
           </Button>
         </View>
 
-        {/* Timeline List */}
         <FlatList
           data={schedule}
           keyExtractor={(item) => item.id}
@@ -170,37 +247,46 @@ export default function PlannerScreen() {
             const Icon = config.icon;
 
             return (
-              <Card className="mb-3 border-0 shadow-sm bg-card">
-                <CardContent className="p-4 flex-row items-center gap-4">
-                  <View className="items-center justify-center w-14">
-                    <Text className="font-bold text-foreground">
-                      {item.start_time}
-                    </Text>
-                    <View className="h-8 w-[2px] bg-border my-1 rounded-full" />
-                    <Text className="text-xs text-muted-foreground">
-                      {item.end_time}
-                    </Text>
-                  </View>
-
-                  <View className={`p-3 rounded-2xl ${config.bg}`}>
-                    <Icon size={20} className={config.color} />
-                  </View>
-
-                  <View className="flex-1">
-                    <Text className="font-bold text-lg text-foreground">
-                      {item.title}
-                    </Text>
-                    <Text className="text-xs text-muted-foreground capitalize">
-                      {item.category}
-                    </Text>
-                  </View>
-                </CardContent>
-              </Card>
+              <TouchableOpacity onPress={() => openEditModal(item)}>
+                <Card className="mb-3 border-0 shadow-sm bg-card">
+                  <CardContent className="p-4 flex-row items-center gap-4">
+                    <View className="items-center justify-center w-14">
+                      <Text className="font-bold text-foreground">
+                        {item.start_time}
+                      </Text>
+                      <View className="h-8 w-[2px] bg-border my-1 rounded-full" />
+                      <Text className="text-xs text-muted-foreground">
+                        {item.end_time}
+                      </Text>
+                    </View>
+                    <View className={`p-3 rounded-2xl ${config.bg}`}>
+                      <Icon size={20} className={config.color} />
+                    </View>
+                    <View className="flex-1">
+                      <Text className="font-bold text-lg text-foreground">
+                        {item.title}
+                      </Text>
+                      <View className="flex-row items-center gap-2">
+                        {item.date && (
+                          <View className="bg-muted px-2 py-0.5 rounded-md">
+                            <Text className="text-[10px] text-muted-foreground font-medium">
+                              {displayDate(item.date)}
+                            </Text>
+                          </View>
+                        )}
+                        <Text className="text-xs text-muted-foreground capitalize">
+                          {item.category}
+                        </Text>
+                      </View>
+                    </View>
+                  </CardContent>
+                </Card>
+              </TouchableOpacity>
             );
           }}
         />
 
-        {/* Stylish Modal */}
+        {/* Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -208,10 +294,10 @@ export default function PlannerScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View className="flex-1 justify-end bg-black/60">
-            <View className="bg-background p-6 rounded-t-[32px] gap-6 shadow-2xl">
+            <View className="bg-background p-6 rounded-t-[32px] gap-6 shadow-2xl pb-10">
               <View className="flex-row justify-between items-center border-b border-border pb-4">
                 <Text className="text-xl font-bold text-foreground">
-                  New Event
+                  {editingId ? "Edit Event" : "New Event"}
                 </Text>
                 <TouchableOpacity
                   onPress={() => setModalVisible(false)}
@@ -221,18 +307,39 @@ export default function PlannerScreen() {
                 </TouchableOpacity>
               </View>
 
-              {/* Title Input */}
               <View className="gap-2">
                 <Text className="font-medium text-foreground ml-1">Title</Text>
                 <Input
                   placeholder="E.g. Math Exam"
                   value={title}
                   onChangeText={setTitle}
-                  className="bg-muted/50 border-0 h-12 rounded-2xl"
+                  className="bg-muted/30 border-0 h-12 rounded-2xl"
                 />
               </View>
 
-              {/* Time Pickers */}
+              <View className="gap-2">
+                <Text className="font-medium text-foreground ml-1">Date</Text>
+                <TouchableOpacity
+                  onPress={() => setShowDatePicker(true)}
+                  className="flex-row items-center bg-muted/50 h-12 px-4 rounded-2xl"
+                >
+                  <Calendar size={18} className="text-primary mr-2" />
+                  <Text className="text-foreground font-medium">
+                    {eventDate.toDateString()}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {showDatePicker && (
+                <DateTimePicker
+                  value={eventDate}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  onChange={onDateChange}
+                  minimumDate={new Date()}
+                />
+              )}
+
               <View className="flex-row gap-4">
                 <View className="flex-1 gap-2">
                   <Text className="font-medium text-foreground ml-1">
@@ -240,7 +347,7 @@ export default function PlannerScreen() {
                   </Text>
                   <TouchableOpacity
                     onPress={() => setShowStartPicker(true)}
-                    className="flex-row items-center bg-muted/50 h-12 px-4 rounded-2xl"
+                    className="flex-row items-center bg-muted/30 h-12 px-4 rounded-2xl"
                   >
                     <Clock size={18} className="text-primary mr-2" />
                     <Text className="text-foreground font-medium">
@@ -248,14 +355,13 @@ export default function PlannerScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-
                 <View className="flex-1 gap-2">
                   <Text className="font-medium text-foreground ml-1">
                     End Time
                   </Text>
                   <TouchableOpacity
                     onPress={() => setShowEndPicker(true)}
-                    className="flex-row items-center bg-muted/50 h-12 px-4 rounded-2xl"
+                    className="flex-row items-center bg-muted/30 h-12 px-4 rounded-2xl"
                   >
                     <Clock size={18} className="text-primary mr-2" />
                     <Text className="text-foreground font-medium">
@@ -265,7 +371,6 @@ export default function PlannerScreen() {
                 </View>
               </View>
 
-              {/* Logic to show DatePicker */}
               {showStartPicker && (
                 <DateTimePicker
                   value={startTime}
@@ -283,7 +388,6 @@ export default function PlannerScreen() {
                 />
               )}
 
-              {/* Category Selection */}
               <View className="gap-2">
                 <Text className="font-medium text-foreground ml-1">
                   Category
@@ -293,7 +397,7 @@ export default function PlannerScreen() {
                     <TouchableOpacity
                       key={key}
                       onPress={() => setCategory(key)}
-                      className={`items-center justify-center w-20 h-20 rounded-2xl border-2 ${category === key ? "border-primary bg-primary/5" : "border-transparent bg-muted/50"}`}
+                      className={`items-center justify-center w-20 h-20 rounded-2xl border-2 ${category === key ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"}`}
                     >
                       <config.icon
                         size={24}
@@ -313,15 +417,30 @@ export default function PlannerScreen() {
                 </View>
               </View>
 
-              <Button
-                onPress={addItem}
-                size="lg"
-                className="rounded-2xl h-14 bg-primary shadow-lg mt-2"
-              >
-                <Text className="text-white font-bold text-lg">
-                  Create Event
-                </Text>
-              </Button>
+              <View className="flex-row gap-3 mt-4">
+                {editingId && (
+                  <Button
+                    variant="destructive"
+                    onPress={deleteItem}
+                    className="flex-1 h-14 rounded-2xl"
+                  >
+                    <Text className="text-white font-bold">Delete</Text>
+                  </Button>
+                )}
+                <Button
+                  onPress={handleSave}
+                  className="flex-[2] h-14 rounded-2xl bg-primary"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text className="text-white font-bold text-lg">
+                      {editingId ? "Update" : "Create"}
+                    </Text>
+                  )}
+                </Button>
+              </View>
             </View>
           </View>
         </Modal>

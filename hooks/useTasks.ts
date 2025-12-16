@@ -12,9 +12,9 @@ export function useTasks() {
     if (!user) return;
     try {
       const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from("tasks")
+        .select("*")
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
       setTasks(data as Task[]);
@@ -33,8 +33,8 @@ export function useTasks() {
     if (!text.trim() || !user) return;
     try {
       const { data, error } = await supabase
-        .from('tasks')
-        .insert([{ user_id: user.id, text, priority: 'medium' }])
+        .from("tasks")
+        .insert([{ user_id: user.id, text, priority: "medium" }])
         .select()
         .single();
 
@@ -45,27 +45,42 @@ export function useTasks() {
     }
   };
 
-  const toggleTask = async (id: string, currentStatus: boolean) => {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !currentStatus } : t));
-    
+  const updateTask = async (id: string, newText: string) => {
+    setTasks(tasks.map((t) => (t.id === id ? { ...t, text: newText } : t)));
+
     try {
       const { error } = await supabase
-        .from('tasks')
+        .from("tasks")
+        .update({ text: newText })
+        .eq("id", id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating task:", error);
+      fetchTasks(); // Revert on error
+    }
+  };
+
+  const toggleTask = async (id: string, currentStatus: boolean) => {
+    setTasks(
+      tasks.map((t) => (t.id === id ? { ...t, completed: !currentStatus } : t))
+    );
+    try {
+      const { error } = await supabase
+        .from("tasks")
         .update({ completed: !currentStatus })
-        .eq('id', id);
-        
+        .eq("id", id);
       if (error) throw error;
     } catch (error) {
       console.error("Error toggling task:", error);
-      fetchTasks(); 
+      fetchTasks();
     }
   };
 
   const deleteTask = async (id: string) => {
-    setTasks(tasks.filter(t => t.id !== id));
-
+    setTasks(tasks.filter((t) => t.id !== id));
     try {
-      const { error } = await supabase.from('tasks').delete().eq('id', id);
+      const { error } = await supabase.from("tasks").delete().eq("id", id);
       if (error) throw error;
     } catch (error) {
       console.error("Error deleting task:", error);
@@ -73,5 +88,13 @@ export function useTasks() {
     }
   };
 
-  return { tasks, loading, addTask, toggleTask, deleteTask, refreshTasks: fetchTasks };
+  return {
+    tasks,
+    loading,
+    addTask,
+    toggleTask,
+    deleteTask,
+    updateTask,
+    refreshTasks: fetchTasks,
+  };
 }

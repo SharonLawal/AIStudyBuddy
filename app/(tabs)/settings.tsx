@@ -3,7 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useColorScheme } from "nativewind";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
-import { Moon, Sun, Bell, User, LogOut, ChevronRight } from "lucide-react-native";
+import { Moon, Sun, Bell, User, LogOut } from "lucide-react-native";
 import { supabase } from "../../libs/supabase";
 import { useAuth } from "../../providers/AuthProvider";
 

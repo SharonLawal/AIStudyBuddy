@@ -7,12 +7,18 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Mail, ArrowLeft, KeyRound } from 'lucide-react-native';
 import { useNotification } from '../../providers/NotificationProvider';
+import { useColorScheme } from "nativewind";
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { showNotification } = useNotification();
+
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const iconColor = isDark ? "#94a3b8" : "#64748b";
+  const backIconColor = isDark ? "#ffffff" : "#0f172a";
 
   async function sendResetLink() {
     if (!email) {
@@ -44,12 +50,12 @@ export default function ForgotPasswordScreen() {
           
           {/* Back Button */}
           <TouchableOpacity onPress={() => router.back()} className="mb-8 w-10 h-10 items-center justify-center bg-muted rounded-full">
-            <ArrowLeft size={20} className="text-foreground" />
+            <ArrowLeft size={20} color={backIconColor} />
           </TouchableOpacity>
 
           <View className="items-center mb-8">
             <View className="w-16 h-16 bg-primary/10 rounded-2xl items-center justify-center mb-4">
-              <KeyRound size={32} className="text-primary" />
+              <KeyRound size={32} color="#7c3aed" />
             </View>
             <Text className="text-3xl font-bold text-foreground mb-2">Forgot Password?</Text>
             <Text className="text-muted-foreground text-center">
@@ -66,7 +72,7 @@ export default function ForgotPasswordScreen() {
                 onChangeText={setEmail} 
                 autoCapitalize="none"
                 keyboardType="email-address"
-                icon={<Mail size={20} color="#94a3b8" />}
+                icon={<Mail size={20} color={iconColor} />}
               />
             </View>
 

@@ -16,6 +16,7 @@ import {
 } from "../../components/ui/Card";
 import { StatsCard } from "../../components/dashboard/StatsCard";
 import { useAuth } from "../../providers/AuthProvider";
+import { useColorScheme } from "nativewind";
 
 const insights = [
   "You're most productive between 10 AM and 12 PM. Schedule hard tasks then!",
@@ -27,6 +28,8 @@ const insights = [
 export default function DashboardScreen() {
   const { user } = useAuth();
   const [insight, setInsight] = useState("");
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     setInsight(insights[Math.floor(Math.random() * insights.length)]);
@@ -56,7 +59,7 @@ export default function DashboardScreen() {
             </Text>
           </View>
           <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center border border-primary/20">
-            <User size={24} className="text-primary" />
+            <User size={24} color="#7c3aed" />
           </View>
         </View>
 
@@ -64,7 +67,7 @@ export default function DashboardScreen() {
         <Card className="bg-primary border-0">
           <CardContent className="p-4 flex-row items-start gap-3">
             <View className="p-2 bg-primary-foreground/20 rounded-lg">
-              <Sparkles size={20} className="text-primary-foreground" />
+              <Sparkles size={20} color="#ffffff" />
             </View>
             <View className="flex-1">
               <Text className="font-semibold text-sm text-primary-foreground">
@@ -81,23 +84,23 @@ export default function DashboardScreen() {
           <StatsCard
             icon={Clock}
             value="2h 15m"
-            label="Focus Today"
-            iconColor="text-primary"
-            bg="bg-primary/10"
+            label="Focus"
+            color="#7c3aed"
+            bg="bg-purple-100 dark:bg-purple-900/40"
           />
           <StatsCard
             icon={CheckCircle2}
             value={7}
-            label="Tasks Done"
-            iconColor="text-secondary"
-            bg="bg-secondary/20"
+            label="Done"
+            color="#2563eb"
+            bg="bg-blue-100 dark:bg-blue-900/40"
           />
           <StatsCard
             icon={Flame}
             value={12}
-            label="Day Streak"
-            iconColor="text-destructive"
-            bg="bg-destructive/20"
+            label="Streak"
+            color="#ea580c"
+            bg="bg-orange-100 dark:bg-orange-900/40"
           />
         </View>
 

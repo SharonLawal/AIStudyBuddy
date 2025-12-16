@@ -13,7 +13,8 @@ import { supabase } from "../../libs/supabase";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Mail, Lock, GraduationCap, ArrowRight } from "lucide-react-native";
-import { useNotification } from '../../providers/NotificationProvider';
+import { useNotification } from "../../providers/NotificationProvider";
+import { useColorScheme } from "nativewind";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -21,13 +22,17 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { showNotification } = useNotification();
 
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const iconColor = isDark ? "#94a3b8" : "#64748b";
+
   async function signInWithEmail() {
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
-    if (error) showNotification('error', 'Login Failed', error.message);
+    if (error) showNotification("error", "Login Failed", error.message);
     setLoading(false);
   }
 
@@ -44,7 +49,7 @@ export default function LoginScreen() {
           {/* Header Section */}
           <View className="items-center mb-12">
             <View className="w-20 h-20 bg-primary/10 rounded-3xl items-center justify-center mb-6 shadow-sm">
-              <GraduationCap size={40} className="text-primary" />
+              <GraduationCap size={40} color="#7c3aed" />
             </View>
             <Text className="text-4xl font-bold text-foreground mb-2">
               Welcome Back
@@ -66,7 +71,7 @@ export default function LoginScreen() {
                 onChangeText={setEmail}
                 autoCapitalize="none"
                 keyboardType="email-address"
-                icon={<Mail size={20} color="#94a3b8" />}
+                icon={<Mail size={20} color={iconColor} />}
               />
             </View>
 
@@ -79,7 +84,7 @@ export default function LoginScreen() {
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
-                icon={<Lock size={20} color="#94a3b8" />}
+                icon={<Lock size={20} color={iconColor} />}
               />
             </View>
 

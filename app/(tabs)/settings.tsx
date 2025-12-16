@@ -10,6 +10,7 @@ import { useAuth } from "../../providers/AuthProvider";
 export default function SettingsScreen() {
   const { colorScheme, toggleColorScheme } = useColorScheme();
   const { user } = useAuth();
+  const isDark = colorScheme === "dark";
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -17,10 +18,10 @@ export default function SettingsScreen() {
         <Text className="text-3xl font-bold text-foreground">Settings</Text>
 
         {/* Profile Card */}
-        <Card className="border-0 shadow-sm bg-card">
+        <Card className="border border-border shadow-sm bg-card dark:border-white/10">
           <CardContent className="p-4 flex-row items-center gap-4">
-            <View className="w-14 h-14 rounded-full bg-primary/20 items-center justify-center">
-              <User size={24} className="text-primary" />
+            <View className="w-14 h-14 rounded-full bg-primary/10 items-center justify-center">
+              <User size={24} color="#7c3aed" />
             </View>
             <View className="flex-1">
               <Text className="font-bold text-lg text-foreground">
@@ -40,13 +41,13 @@ export default function SettingsScreen() {
           <Card>
             <CardContent className="p-0">
               {/* Theme Toggle */}
-              <View className="flex-row items-center justify-between p-4 border-b border-border">
+              <View className="flex-row items-center justify-between p-4 border-b border-border dark:border-white/5">
                 <View className="flex-row items-center gap-3">
-                  <View className="p-2 bg-purple-100 dark:bg-purple-900 rounded-full">
-                    {colorScheme === 'dark' ? (
-                      <Moon size={20} className="text-purple-600 dark:text-purple-300" />
+                  <View className="p-2 bg-purple-100 dark:bg-purple-900/50 rounded-full">
+                    {isDark ? (
+                      <Moon size={20} color="#d8b4fe" />
                     ) : (
-                      <Sun size={20} className="text-purple-600" />
+                      <Sun size={20} color="#7c3aed" />
                     )}
                   </View>
                   <View>
@@ -55,17 +56,18 @@ export default function SettingsScreen() {
                   </View>
                 </View>
                 <Switch 
-                  value={colorScheme === 'dark'} 
+                  value={isDark} 
                   onValueChange={toggleColorScheme}
                   trackColor={{ false: '#e2e8f0', true: '#7c3aed' }}
+                  thumbColor={isDark ? "#ffffff" : "#ffffff"}
                 />
               </View>
 
-              {/* Notifications Mock */}
+              {/* Notifications */}
               <View className="flex-row items-center justify-between p-4">
                 <View className="flex-row items-center gap-3">
-                  <View className="p-2 bg-blue-100 dark:bg-blue-900 rounded-full">
-                    <Bell size={20} className="text-blue-600 dark:text-blue-300" />
+                  <View className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                    <Bell size={20} color={isDark ? "#93c5fd" : "#2563eb"} />
                   </View>
                   <View>
                     <Text className="font-semibold text-foreground">Notifications</Text>
@@ -84,7 +86,7 @@ export default function SettingsScreen() {
           className="flex-row gap-2 mt-4" 
           onPress={() => supabase.auth.signOut()}
         >
-          <LogOut size={18} className="text-white" />
+          <LogOut size={18} color="white" />
           <Text className="text-white font-bold">Sign Out</Text>
         </Button>
       </ScrollView>

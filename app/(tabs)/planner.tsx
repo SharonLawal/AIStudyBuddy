@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useColorScheme } from "nativewind";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
@@ -30,26 +31,26 @@ import { useAuth } from "../../providers/AuthProvider";
 const categoryConfig: any = {
   class: {
     icon: GraduationCap,
-    color: "text-purple-600",
-    bg: "bg-purple-100",
+    colorHex: "#9333ea",
+    bg: "bg-purple-100 dark:bg-purple-900/30",
     label: "Class",
   },
   study: {
     icon: BookOpen,
-    color: "text-blue-600",
-    bg: "bg-blue-100",
+    colorHex: "#2563eb",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
     label: "Study",
   },
   break: {
     icon: Coffee,
-    color: "text-orange-600",
-    bg: "bg-orange-100",
+    colorHex: "#ea580c",
+    bg: "bg-orange-100 dark:bg-orange-900/30",
     label: "Break",
   },
   activity: {
     icon: Dumbbell,
-    color: "text-green-600",
-    bg: "bg-green-100",
+    colorHex: "#16a34a",
+    bg: "bg-green-100 dark:bg-green-900/30",
     label: "Activity",
   },
 };
@@ -72,6 +73,8 @@ export default function PlannerScreen() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [eventDate, setEventDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   useEffect(() => {
     if (user) fetchSchedule();
@@ -248,19 +251,20 @@ export default function PlannerScreen() {
 
             return (
               <TouchableOpacity onPress={() => openEditModal(item)}>
-                <Card className="mb-3 border-0 shadow-sm bg-card">
+                <Card className="mb-3 border border-border shadow-sm bg-card dark:border-white/10">
                   <CardContent className="p-4 flex-row items-center gap-4">
                     <View className="items-center justify-center w-14">
                       <Text className="font-bold text-foreground">
                         {item.start_time}
                       </Text>
-                      <View className="h-8 w-[2px] bg-border my-1 rounded-full" />
+
+                      <View className="h-8 w-[2px] bg-border my-1 rounded-full dark:bg-white/10" />
                       <Text className="text-xs text-muted-foreground">
                         {item.end_time}
                       </Text>
                     </View>
                     <View className={`p-3 rounded-2xl ${config.bg}`}>
-                      <Icon size={20} className={config.color} />
+                      <Icon size={20} color={config.colorHex} />
                     </View>
                     <View className="flex-1">
                       <Text className="font-bold text-lg text-foreground">
@@ -294,8 +298,9 @@ export default function PlannerScreen() {
           onRequestClose={() => setModalVisible(false)}
         >
           <View className="flex-1 justify-end bg-black/60">
-            <View className="bg-background p-6 rounded-t-[32px] gap-6 shadow-2xl pb-10">
-              <View className="flex-row justify-between items-center border-b border-border pb-4">
+            {/* ✅ Modal Content Styled for Dark Mode */}
+            <View className="bg-background p-6 rounded-t-[32px] gap-6 shadow-2xl pb-10 border-t border-white/10">
+              <View className="flex-row justify-between items-center border-b border-border pb-4 dark:border-white/10">
                 <Text className="text-xl font-bold text-foreground">
                   {editingId ? "Edit Event" : "New Event"}
                 </Text>
@@ -303,7 +308,8 @@ export default function PlannerScreen() {
                   onPress={() => setModalVisible(false)}
                   className="p-2 bg-muted rounded-full"
                 >
-                  <X size={20} className="text-foreground" />
+                  {/* ✅ Close Icon handles Dark Mode */}
+                  <X size={20} color={isDark ? "#ffffff" : "#0f172a"} />
                 </TouchableOpacity>
               </View>
 
@@ -313,7 +319,7 @@ export default function PlannerScreen() {
                   placeholder="E.g. Math Exam"
                   value={title}
                   onChangeText={setTitle}
-                  className="bg-muted/30 border-0 h-12 rounded-2xl"
+                  className="bg-muted/30 border border-border h-12 rounded-2xl dark:bg-muted/50"
                 />
               </View>
 
@@ -321,9 +327,14 @@ export default function PlannerScreen() {
                 <Text className="font-medium text-foreground ml-1">Date</Text>
                 <TouchableOpacity
                   onPress={() => setShowDatePicker(true)}
-                  className="flex-row items-center bg-muted/50 h-12 px-4 rounded-2xl"
+                  className="flex-row items-center bg-muted/30 border border-border h-12 px-4 rounded-2xl dark:bg-muted/50"
                 >
-                  <Calendar size={18} className="text-primary mr-2" />
+                  {/* ✅ Calendar Icon handles Dark Mode */}
+                  <Calendar
+                    size={18}
+                    color={isDark ? "#a1a1aa" : "#7c3aed"}
+                    style={{ marginRight: 8 }}
+                  />
                   <Text className="text-foreground font-medium">
                     {eventDate.toDateString()}
                   </Text>
@@ -347,9 +358,14 @@ export default function PlannerScreen() {
                   </Text>
                   <TouchableOpacity
                     onPress={() => setShowStartPicker(true)}
-                    className="flex-row items-center bg-muted/30 h-12 px-4 rounded-2xl"
+                    className="flex-row items-center bg-muted/30 border border-border h-12 px-4 rounded-2xl dark:bg-muted/50"
                   >
-                    <Clock size={18} className="text-primary mr-2" />
+                    {/* ✅ Clock Icon handles Dark Mode */}
+                    <Clock
+                      size={18}
+                      color={isDark ? "#a1a1aa" : "#7c3aed"}
+                      style={{ marginRight: 8 }}
+                    />
                     <Text className="text-foreground font-medium">
                       {formatTime(startTime)}
                     </Text>
@@ -361,9 +377,13 @@ export default function PlannerScreen() {
                   </Text>
                   <TouchableOpacity
                     onPress={() => setShowEndPicker(true)}
-                    className="flex-row items-center bg-muted/30 h-12 px-4 rounded-2xl"
+                    className="flex-row items-center bg-muted/30 border border-border h-12 px-4 rounded-2xl dark:bg-muted/50"
                   >
-                    <Clock size={18} className="text-primary mr-2" />
+                    <Clock
+                      size={18}
+                      color={isDark ? "#a1a1aa" : "#7c3aed"}
+                      style={{ marginRight: 8 }}
+                    />
                     <Text className="text-foreground font-medium">
                       {formatTime(endTime)}
                     </Text>
@@ -375,7 +395,7 @@ export default function PlannerScreen() {
                 <DateTimePicker
                   value={startTime}
                   mode="time"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  display="spinner"
                   onChange={(e, d) => onTimeChange(e, d, "start")}
                 />
               )}
@@ -383,7 +403,7 @@ export default function PlannerScreen() {
                 <DateTimePicker
                   value={endTime}
                   mode="time"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  display="spinner"
                   onChange={(e, d) => onTimeChange(e, d, "end")}
                 />
               )}
@@ -397,18 +417,29 @@ export default function PlannerScreen() {
                     <TouchableOpacity
                       key={key}
                       onPress={() => setCategory(key)}
-                      className={`items-center justify-center w-20 h-20 rounded-2xl border-2 ${category === key ? "border-primary bg-primary/5" : "border-transparent bg-muted/30"}`}
+                      className={`items-center justify-center w-20 h-20 rounded-2xl border-2 ${
+                        category === key
+                          ? "border-primary bg-primary/10"
+                          : "border-transparent bg-muted/30 dark:bg-muted/50"
+                      }`}
                     >
+                      {/* ✅ Category Icons handle Dark Mode */}
                       <config.icon
                         size={24}
-                        className={
+                        color={
                           category === key
-                            ? "text-primary"
-                            : "text-muted-foreground"
+                            ? "#7c3aed"
+                            : isDark
+                              ? "#a1a1aa"
+                              : "#64748b"
                         }
                       />
                       <Text
-                        className={`text-xs mt-1 ${category === key ? "text-primary font-bold" : "text-muted-foreground"}`}
+                        className={`text-xs mt-1 ${
+                          category === key
+                            ? "text-primary font-bold"
+                            : "text-muted-foreground"
+                        }`}
                       >
                         {config.label}
                       </Text>
@@ -429,14 +460,14 @@ export default function PlannerScreen() {
                 )}
                 <Button
                   onPress={handleSave}
-                  className="flex-[2] h-14 rounded-2xl bg-primary"
+                  className="flex-[2] h-14 rounded-2xl bg-primary shadow-lg shadow-primary/25"
                   disabled={loading}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
                     <Text className="text-white font-bold text-lg">
-                      {editingId ? "Update" : "Create"}
+                      {editingId ? "Update" : "Create Event"}
                     </Text>
                   )}
                 </Button>

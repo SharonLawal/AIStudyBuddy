@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, Switch, TextInput } from "react-native";
+import { View, Text, Switch } from "react-native";
 import { Svg, Circle } from "react-native-svg";
-import { Play, Pause, Square, RotateCcw, Shield } from "lucide-react-native";
+import { Play, Pause, Square, Shield } from "lucide-react-native";
 import { Card, CardContent } from "../../components/ui/Card";
 import { Button } from "../../components/ui/Button";
 

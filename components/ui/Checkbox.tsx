@@ -1,4 +1,4 @@
-import { TouchableOpacity, View } from "react-native";
+import { TouchableOpacity } from "react-native";
 import { Check } from "lucide-react-native";
 import { styled } from "nativewind";
 

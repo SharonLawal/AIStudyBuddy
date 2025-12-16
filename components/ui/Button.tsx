@@ -1,14 +1,30 @@
-import React from 'react';
-import { Text, TouchableOpacity, TouchableOpacityProps, View } from "react-native";
+import React from "react";
+import {
+  Text,
+  TouchableOpacity,
+  TouchableOpacityProps,
+} from "react-native";
 import { cn } from "../../libs/utils";
 
 interface ButtonProps extends TouchableOpacityProps {
-  variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  variant?:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
 }
 
-export function Button({ className, variant = "default", size = "default", children, ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant = "default",
+  size = "default",
+  children,
+  ...props
+}: ButtonProps) {
   // Styles for text content
   const textClass = cn(
     "text-sm font-medium",
@@ -41,7 +57,7 @@ export function Button({ className, variant = "default", size = "default", child
       {...props}
     >
       {React.Children.map(children, (child) => {
-        if (typeof child === 'string') {
+        if (typeof child === "string") {
           return <Text className={textClass}>{child}</Text>;
         }
         return child;

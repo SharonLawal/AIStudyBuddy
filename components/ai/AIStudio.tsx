@@ -1,17 +1,21 @@
 import { useState } from "react";
-import { View, Text, ScrollView, TextInput, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { View, Text, ScrollView, TextInput, Alert, ActivityIndicator } from "react-native";
 import * as DocumentPicker from 'expo-document-picker';
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
 import { Card, CardContent } from "../ui/Card";
-import { Upload, Sparkles, Brain, X } from "lucide-react-native";
+import { Upload, Sparkles, Brain } from "lucide-react-native";
 import { AIService } from "../../libs/ai";
+import { AIResultDisplay } from "./AIResultDisplay";
+import { QuizQuestion } from "../../types";
 
 export function AIStudio() {
   const [loading, setLoading] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
-  const [aiResult, setAiResult] = useState<string | null>(null);
+  
+  // State can hold string (summary) or QuizQuestion[] (quiz)
+  const [aiResult, setAiResult] = useState<string | QuizQuestion[] | null>(null);
   const [activeAiTab, setActiveAiTab] = useState<"summary" | "quiz">("summary");
 
   async function handleFileUpload() {
@@ -37,13 +41,15 @@ export function AIStudio() {
     }
 
     setLoading(true);
+    setAiResult(null);
+
     try {
       if (activeAiTab === 'summary') {
         const summary = await AIService.generateSummary(noteContent);
         setAiResult(summary);
       } else {
         const quiz = await AIService.generateQuiz(noteContent);
-        setAiResult(JSON.stringify(quiz)); 
+        setAiResult(quiz); 
       }
     } catch (e) {
       Alert.alert("AI Error", "Failed to generate content.");
@@ -111,54 +117,12 @@ export function AIStudio() {
 
       {/* Result Section */}
       {aiResult && (
-        <AIResultDisplay result={aiResult} type={activeAiTab} onClose={() => setAiResult(null)} />
+        <AIResultDisplay 
+          result={aiResult} 
+          type={activeAiTab} 
+          onClose={() => setAiResult(null)} 
+        />
       )}
     </ScrollView>
-  );
-}
-
-// Sub-component for displaying results cleanly
-function AIResultDisplay({ result, type, onClose }: { result: string, type: string, onClose: () => void }) {
-  return (
-    <Card className="bg-secondary/10 border-secondary/20 mt-4">
-      <CardContent className="p-4">
-        <View className="flex-row justify-between items-center mb-2">
-          <Text className="font-bold text-lg text-foreground">
-            {type === 'summary' ? 'Summary' : 'Quiz Generated'}
-          </Text>
-          <TouchableOpacity onPress={onClose}>
-            <X size={16} className="text-muted-foreground" />
-          </TouchableOpacity>
-        </View>
-
-        {type === 'summary' ? (
-          <Text className="text-foreground leading-6">{result}</Text>
-        ) : (
-          <View className="gap-4">
-            {(() => {
-              try {
-                const questions = JSON.parse(result);
-                if (!Array.isArray(questions)) return <Text className="text-destructive">Invalid quiz format received.</Text>;
-                
-                return questions.map((q: any, i: number) => (
-                  <View key={i} className="gap-2 border-b border-border/50 pb-4">
-                    <Text className="font-semibold text-foreground">{i + 1}. {q.question}</Text>
-                    {q.options.map((opt: string, idx: number) => (
-                      <View key={idx} className={`p-2 rounded-md ${idx === q.answer ? 'bg-green-500/20' : 'bg-muted'}`}>
-                        <Text className={idx === q.answer ? 'text-green-700 font-medium' : 'text-foreground'}>
-                          {opt} {idx === q.answer && "(Correct)"}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                ));
-              } catch (e) {
-                return <Text className="text-destructive">Error parsing quiz data.</Text>;
-              }
-            })()}
-          </View>
-        )}
-      </CardContent>
-    </Card>
   );
 }

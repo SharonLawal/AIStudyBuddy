@@ -1,55 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { View, Text, FlatList, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { supabase } from "../../libs/supabase";
-import { useAuth } from "../../providers/AuthProvider";
 import { Button } from "../../components/ui/Button";
 import { Input } from "../../components/ui/Input";
 import { Plus } from "lucide-react-native";
+import { useTasks } from "../../hooks/useTasks";
 import { TaskItem } from "../../components/tasks/TaskItem";
 import { AIStudio } from "../../components/ai/AIStudio";
 
 export default function NotesScreen() {
-  const { user } = useAuth();
   const [viewMode, setViewMode] = useState<"tasks" | "ai-studio">("tasks");
-  const [tasks, setTasks] = useState<any[]>([]);
   const [newTask, setNewTask] = useState("");
+  const { tasks, addTask, toggleTask, deleteTask } = useTasks();
 
-  useEffect(() => {
-    fetchTasks();
-  }, [user]);
-
-  async function fetchTasks() {
-    if (!user) return;
-    const { data } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (data) setTasks(data);
-  }
-
-  async function addTask() {
-    if (!newTask.trim() || !user) return;
-    
-    const { data } = await supabase
-      .from('tasks')
-      .insert([{ user_id: user.id, text: newTask, priority: 'medium' }])
-      .select();
-
-    if (data) setTasks([data[0], ...tasks]);
+  const handleAddTask = () => {
+    addTask(newTask);
     setNewTask("");
-  }
-
-  async function toggleTask(id: string, currentStatus: boolean) {
-    setTasks(tasks.map(t => t.id === id ? { ...t, completed: !currentStatus } : t));
-    await supabase.from('tasks').update({ completed: !currentStatus }).eq('id', id);
-  }
-
-  async function deleteTask(id: string) {
-    setTasks(tasks.filter(t => t.id !== id));
-    await supabase.from('tasks').delete().eq('id', id);
-  }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={['top']}>
@@ -83,7 +50,7 @@ export default function NotesScreen() {
                 value={newTask} 
                 onChangeText={setNewTask} 
               />
-              <Button size="icon" onPress={addTask}>
+              <Button size="icon" onPress={handleAddTask}>
                 <Plus size={20} className="text-primary-foreground" />
               </Button>
             </View>
@@ -109,7 +76,7 @@ export default function NotesScreen() {
   );
 }
 
-// Small helper component for the tabs
+// Small helper component
 function TabButton({ label, isActive, onPress }: { label: string, isActive: boolean, onPress: () => void }) {
   return (
     <TouchableOpacity 

@@ -1,8 +1,10 @@
+import { TabButton } from "@/components/ui/TabButton";
 import { Tabs } from "expo-router";
 import {
   Home,
   Target,
   Calendar,
+  Book,
   FileText,
   Settings,
 } from "lucide-react-native";
@@ -42,6 +44,13 @@ export default function TabLayout() {
         options={{
           title: "Planner",
           tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="library"
+        options={{
+          title: "Library",
+          tabBarIcon: ({ color }) => <Book size={24} color={color} />,
         }}
       />
       <Tabs.Screen

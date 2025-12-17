@@ -1,197 +1,277 @@
 import { useState } from "react";
-import { View, Text, ScrollView, TextInput, ActivityIndicator, TouchableOpacity, Alert } from "react-native";
-import * as DocumentPicker from 'expo-document-picker';
+import { ScrollView, View, ActivityIndicator, Text, Alert } from "react-native";
+import * as DocumentPicker from "expo-document-picker";
+import * as Sharing from "expo-sharing";
+import * as Print from "expo-print";
+import { readAsStringAsync } from "expo-file-system/legacy";
+
+// Components
 import { Button } from "../ui/Button";
-import { Input } from "../ui/Input";
-import { Card, CardContent } from "../ui/Card";
-import { Upload, Sparkles, Brain, X, FileText, Trash2 } from "lucide-react-native";
+import { StudioInput } from "./StudioInput";
+import { StudioSettings } from "./StudioSettings";
+import { SummaryResult } from "./SummaryResult";
+import { QuizResultWrapper } from "./QuizResultWrapper";
+
+// Logic & Services
+import { useNotification } from "../../providers/NotificationProvider";
 import { AIService } from "../../libs/ai";
-import { useNotification } from '../../providers/NotificationProvider';
-import { QuizGame } from "./QuizGame";
+import { extractTextFromPPTX } from "../../libs/parsePptx";
+import { supabase } from "../../libs/supabase";
+import { useAuth } from "../../providers/AuthProvider";
 import { QuizQuestion } from "../../types";
 
 export function AIStudio() {
-  const [loading, setLoading] = useState(false);
-  const [noteTitle, setNoteTitle] = useState("");
-  const [noteContent, setNoteContent] = useState("");
-  
-  const [attachedFile, setAttachedFile] = useState<{ name: string; mimeType: string; data: string } | null>(null);
-
-  const [summaryResult, setSummaryResult] = useState<string | null>(null);
-  const [quizResult, setQuizResult] = useState<QuizQuestion[] | null>(null);
-  const [activeAiTab, setActiveAiTab] = useState<"summary" | "quiz">("summary");
+  const { user } = useAuth();
   const { showNotification } = useNotification();
 
+  // State
+  const [loading, setLoading] = useState(false);
+  const [loadingStep, setLoadingStep] = useState("");
+  const [noteTitle, setNoteTitle] = useState("");
+  const [noteContent, setNoteContent] = useState("");
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [attachedFile, setAttachedFile] = useState<{
+    name: string;
+    mimeType: string;
+    data: string;
+    uri: string;
+  } | null>(null);
+  const [activeAiTab, setActiveAiTab] = useState<"summary" | "quiz">("summary");
+
+  // Results
+  const [summaryResult, setSummaryResult] = useState<string | null>(null);
+  const [quizResult, setQuizResult] = useState<QuizQuestion[] | null>(null);
+
+  // --- LOGIC: FILE HANDLING ---
   async function handleFileUpload() {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: '*/*', 
-        copyToCacheDirectory: true
+        type: "*/*",
+        copyToCacheDirectory: true,
       });
-
       if (!result.canceled && result.assets && result.assets[0]) {
         const file = result.assets[0];
-        
-        if (file.name.endsWith('.pptx') || file.name.endsWith('.docx')) {
-          Alert.alert("Unsupported File", "Please save as PDF first. The AI can read PDFs perfectly!");
+        const fileName = file.name.toLowerCase();
+
+        if (fileName.endsWith(".pptx")) {
+          setLoading(true);
+          setLoadingStep("Reading Slides...");
+          try {
+            const pptText = await extractTextFromPPTX(file.uri);
+            setNoteContent(
+              (prev) =>
+                (prev ? prev + "\n\n" : "") +
+                `--- CONTENT FROM ${file.name} ---\n` +
+                pptText
+            );
+            if (!noteTitle) setNoteTitle(file.name);
+            showNotification("success", "Slides Loaded", "Text extracted!");
+          } catch (e) {
+            Alert.alert("Error", "Could not parse PowerPoint.");
+          } finally {
+            setLoading(false);
+            setLoadingStep("");
+          }
           return;
         }
-
-        const response = await fetch(file.uri);
-        const blob = await response.blob();
-        const reader = new FileReader();
-        
-        reader.onloadend = () => {
-          const base64data = (reader.result as string).split(',')[1];
-          setAttachedFile({
-            name: file.name,
-            mimeType: file.mimeType || 'application/pdf',
-            data: base64data
-          });
-          if (!noteTitle) setNoteTitle(file.name);
-          showNotification('success', 'File Attached', 'Ready for analysis.');
-        };
-        reader.readAsDataURL(blob);
+        if (fileName.endsWith(".txt") || fileName.endsWith(".md")) {
+          try {
+            const textContent = await readAsStringAsync(file.uri, {
+              encoding: "utf8",
+            });
+            setNoteContent((prev) => prev + "\n" + textContent);
+            if (!noteTitle) setNoteTitle(file.name);
+          } catch (e) {}
+          return;
+        }
+        if (fileName.endsWith(".pdf")) {
+          try {
+            const base64 = await readAsStringAsync(file.uri, {
+              encoding: "base64",
+            });
+            setAttachedFile({
+              name: file.name,
+              mimeType: "application/pdf",
+              data: base64,
+              uri: file.uri,
+            });
+            if (!noteTitle) setNoteTitle(file.name);
+          } catch (e) {}
+        }
       }
     } catch (err) {
-      showNotification('error', 'Error', 'Failed to read file.');
+      showNotification("error", "Error", "Failed to pick file.");
     }
   }
 
+  // --- LOGIC: GENERATE ---
   async function generateAIContent() {
     if (!noteContent.trim() && !attachedFile) {
-      showNotification('error', 'Input Required', 'Please type notes or upload a PDF.');
+      showNotification(
+        "error",
+        "Input Required",
+        "Please type notes or upload a file."
+      );
       return;
     }
-
     setLoading(true);
+    setLoadingStep("Thinking...");
     setSummaryResult(null);
     setQuizResult(null);
-
-    const options = {
-      text: noteContent,
-      file: attachedFile ? { mimeType: attachedFile.mimeType, data: attachedFile.data } : undefined
-    };
-
     try {
-      if (activeAiTab === 'summary') {
+      const options = {
+        text: noteContent,
+        file: attachedFile
+          ? { mimeType: attachedFile.mimeType, data: attachedFile.data }
+          : undefined,
+        questionCount: numQuestions,
+      };
+      if (activeAiTab === "summary") {
         const summary = await AIService.generateSummary(options);
         setSummaryResult(summary);
       } else {
         const quiz = await AIService.generateQuiz(options);
-        if (quiz && quiz.length > 0) {
-          setQuizResult(quiz);
-        } else {
-          showNotification('error', 'AI Error', 'Could not generate a quiz. content was unclear.');
-        }
+        if (quiz && quiz.length > 0) setQuizResult(quiz);
+        else Alert.alert("AI Error", "Could not generate quiz.");
       }
     } catch (e) {
-      showNotification('error', 'AI Error', 'Failed to generate content.');
+      Alert.alert("Error", "AI Generation Failed");
+    } finally {
+      setLoading(false);
+      setLoadingStep("");
+    }
+  }
+
+  // --- LOGIC: SAVING ---
+  async function saveSummaryToNotes() {
+    if (!summaryResult || !user) return;
+    setLoading(true);
+    try {
+      const fullContent = `# ${noteTitle || "AI Summary"}\n\n${summaryResult}\n\n## Original Notes\n${noteContent}`;
+      const { error } = await supabase.from("notes").insert({
+        user_id: user.id,
+        title: noteTitle || "AI Study Session",
+        content: fullContent,
+        is_ai_generated: true,
+      });
+      if (error) throw error;
+      showNotification("success", "Saved!", "Summary saved to Library.");
+    } catch (e: any) {
+      Alert.alert("Save Failed", e.message);
     } finally {
       setLoading(false);
     }
   }
 
+  async function saveQuizToLibrary() {
+    if (!quizResult || !user) return;
+    setLoading(true);
+    try {
+      let content =
+        `# Quiz: ${noteTitle || "Study Session"}\n\n` +
+        quizResult
+          .map(
+            (q, i) =>
+              `**Q${i + 1}: ${q.question}**\n${q.options.map((o, idx) => `- ${o} ${idx === q.answer ? "✅" : ""}`).join("\n")}`
+          )
+          .join("\n\n");
+
+      const { error } = await supabase.from("notes").insert({
+        user_id: user.id,
+        title: `Quiz: ${noteTitle || "Untitled"}`,
+        content: content,
+        is_ai_generated: true,
+      });
+
+      if (error) throw error;
+      showNotification("success", "Saved!", "Quiz saved to Library.");
+    } catch (e: any) {
+      Alert.alert("Save Failed", e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function exportQuizAsPDF() {
+    if (!quizResult) return;
+    try {
+      const html = `<html><head><style>body{font-family:sans-serif;padding:40px}h1{color:#7c3aed}.answer{color:green;font-weight:bold}</style></head><body><h1>Quiz: ${noteTitle}</h1>${quizResult.map((q, i) => `<div><h3>Q${i + 1}: ${q.question}</h3><ul>${q.options.map((o, idx) => `<li>${String.fromCharCode(65 + idx)}) ${o}</li>`).join("")}</ul><div class="answer">Correct: ${q.options[q.answer]}</div><hr/></div>`).join("")}</body></html>`;
+      const { uri } = await Print.printToFileAsync({ html });
+      await Sharing.shareAsync(uri, {
+        UTI: ".pdf",
+        mimeType: "application/pdf",
+      });
+    } catch (e) {
+      Alert.alert("Export Error", "Failed to create PDF.");
+    }
+  }
+
   return (
-    <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
+    <ScrollView
+      className="flex-1"
+      contentContainerStyle={{ paddingBottom: 100 }}
+    >
       {!quizResult && (
         <>
-          <Card className="mb-6 bg-card border border-border dark:border-white/10">
-            <CardContent className="p-4 gap-4">
-              <View className="flex-row justify-between items-center border-b border-border/50 pb-2 mb-1">
-                <Text className="font-semibold text-foreground flex-row items-center">
-                  <FileText size={16} className="text-primary mr-2" /> Study Material
-                </Text>
-                <TouchableOpacity onPress={handleFileUpload} className="flex-row items-center gap-1 bg-primary/10 px-3 py-1.5 rounded-full">
-                  <Upload size={14} color="#7c3aed" />
-                  <Text className="text-primary text-xs font-bold">Upload PDF</Text>
-                </TouchableOpacity>
-              </View>
+          <StudioInput
+            noteTitle={noteTitle}
+            setNoteTitle={setNoteTitle}
+            noteContent={noteContent}
+            setNoteContent={setNoteContent}
+            attachedFile={attachedFile}
+            onUploadFile={handleFileUpload}
+            onClearFile={() => setAttachedFile(null)}
+          />
 
-              {/* Show attached file */}
-              {attachedFile && (
-                <View className="bg-muted/50 p-3 rounded-xl flex-row items-center justify-between border border-border">
-                  <View className="flex-row items-center gap-2 flex-1">
-                    <FileText size={18} className="text-primary" />
-                    <Text className="text-sm font-medium text-foreground flex-1" numberOfLines={1}>
-                      {attachedFile.name}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={() => setAttachedFile(null)}>
-                    <Trash2 size={18} className="text-destructive" />
-                  </TouchableOpacity>
-                </View>
-              )}
+          <StudioSettings
+            activeTab={activeAiTab}
+            setActiveTab={setActiveAiTab}
+            numQuestions={numQuestions}
+            setNumQuestions={setNumQuestions}
+            minQuestions={5}
+            maxQuestions={50}
+          />
 
-              <Input 
-                placeholder="Topic Title (Optional)" 
-                value={noteTitle}
-                onChangeText={setNoteTitle}
-                className="bg-muted/30 border-transparent h-12"
-              />
-              
-              <TextInput
-                multiline
-                placeholder={attachedFile ? "Add specific instructions for the AI..." : "Paste your notes or essay here..."}
-                placeholderTextColor="#9ca3af"
-                className="min-h-[120px] bg-muted/30 p-4 rounded-2xl text-foreground border border-transparent text-base leading-6"
-                style={{ textAlignVertical: 'top' }}
-                value={noteContent}
-                onChangeText={setNoteContent}
-              />
-            </CardContent>
-          </Card>
-
-          <View className="flex-row gap-3 mb-6 bg-muted/50 p-1 rounded-2xl">
-            <TouchableOpacity 
-              className={`flex-1 flex-row gap-2 items-center justify-center py-3 rounded-xl ${activeAiTab === 'summary' ? 'bg-background' : ''}`}
-              onPress={() => setActiveAiTab('summary')}
-            >
-              <Sparkles size={18} color={activeAiTab === 'summary' ? "#d97706" : "#94a3b8"} />
-              <Text className={`font-bold ${activeAiTab === 'summary' ? 'text-foreground' : 'text-muted-foreground'}`}>Summarize</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              className={`flex-1 flex-row gap-2 items-center justify-center py-3 rounded-xl ${activeAiTab === 'quiz' ? 'bg-background' : ''}`}
-              onPress={() => setActiveAiTab('quiz')}
-            >
-              <Brain size={18} color={activeAiTab === 'quiz' ? "#7c3aed" : "#94a3b8"} />
-              <Text className={`font-bold ${activeAiTab === 'quiz' ? 'text-foreground' : 'text-muted-foreground'}`}>Generate Quiz</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Button size="lg" className="w-full mb-8 h-14 rounded-2xl shadow-md shadow-primary/20" onPress={generateAIContent} disabled={loading}>
+          <Button
+            size="lg"
+            className="w-full mb-8 h-14 rounded-2xl shadow-md shadow-primary/20"
+            onPress={generateAIContent}
+            disabled={loading}
+          >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <View className="flex-row gap-2 items-center">
+                <ActivityIndicator color="#fff" />
+                <Text className="text-white font-medium">
+                  {loadingStep || "Processing..."}
+                </Text>
+              </View>
             ) : (
               <Text className="text-white font-bold text-lg">
-                {activeAiTab === 'summary' ? '✨ Generate Summary' : '🚀 Start Quiz'}
+                {activeAiTab === "summary"
+                  ? "✨ Generate Summary"
+                  : "🚀 Start Quiz"}
               </Text>
             )}
           </Button>
         </>
       )}
 
-      {summaryResult && activeAiTab === 'summary' && (
-        <Card className="bg-card border border-primary/20 shadow-sm mb-10">
-          <CardContent className="p-5">
-            <View className="flex-row justify-between items-center mb-4 border-b border-border/50 pb-2">
-              <Text className="font-bold text-xl text-primary">✨ Key Takeaways</Text>
-              <TouchableOpacity onPress={() => setSummaryResult(null)}>
-                <X size={20} className="text-muted-foreground" />
-              </TouchableOpacity>
-            </View>
-            <Text className="text-foreground text-base leading-7">{summaryResult}</Text>
-          </CardContent>
-        </Card>
+      {summaryResult && activeAiTab === "summary" && (
+        <SummaryResult
+          summary={summaryResult}
+          onSave={saveSummaryToNotes}
+          onClose={() => setSummaryResult(null)}
+        />
       )}
 
-      {quizResult && activeAiTab === 'quiz' && (
-        <View className="mb-10">
-           <QuizGame questions={quizResult} onExit={() => setQuizResult(null)} />
-        </View>
+      {quizResult && activeAiTab === "quiz" && (
+        <QuizResultWrapper
+          questions={quizResult}
+          onSaveLibrary={saveQuizToLibrary}
+          onExportPDF={exportQuizAsPDF}
+          onClose={() => setQuizResult(null)}
+        />
       )}
-
     </ScrollView>
   );
 }

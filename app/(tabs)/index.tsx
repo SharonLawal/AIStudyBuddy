@@ -1,120 +1,227 @@
-import { useState, useEffect } from "react";
-import { View, Text, ScrollView } from "react-native";
+import { useCallback, useState } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  RefreshControl,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter, useFocusEffect } from "expo-router";
 import {
   Sparkles,
+  BookOpen,
   Clock,
-  CheckCircle2,
-  Flame,
-  User,
+  ChevronRight,
+  Brain,
+  FileText,
 } from "lucide-react-native";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "../../components/ui/Card";
-import { StatsCard } from "../../components/dashboard/StatsCard";
+import { supabase } from "../../libs/supabase";
 import { useAuth } from "../../providers/AuthProvider";
-import { useColorScheme } from "nativewind";
 
-const insights = [
-  "You're most productive between 10 AM and 12 PM. Schedule hard tasks then!",
-  "Taking a 5-minute break every hour improves retention by 20%.",
-  "Reviewing notes before bed helps consolidate memory.",
-  "Drink water! Hydration boosts cognitive function.",
-];
-
-export default function DashboardScreen() {
+export default function HomeScreen() {
   const { user } = useAuth();
-  const [insight, setInsight] = useState("");
-  const { colorScheme } = useColorScheme();
+  const router = useRouter();
 
-  useEffect(() => {
-    setInsight(insights[Math.floor(Math.random() * insights.length)]);
-  }, []);
+  const [recentNotes, setRecentNotes] = useState<any[]>([]);
+  const [stats, setStats] = useState({ totalNotes: 0, totalQuizzes: 0 });
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const currentHour = new Date().getHours();
-  const greeting =
-    currentHour < 12
-      ? "Good Morning"
-      : currentHour < 17
-        ? "Good Afternoon"
-        : "Good Evening";
+  useFocusEffect(
+    useCallback(() => {
+      loadDashboardData();
+    }, [user])
+  );
+
+  async function loadDashboardData() {
+    if (!user) return;
+    try {
+      const { data: recent, error: recentError } = await supabase
+        .from("notes")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (recentError) throw recentError;
+      setRecentNotes(recent || []);
+
+      const { count: noteCount, error: countError } = await supabase
+        .from("notes")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", user.id);
+
+      if (countError) throw countError;
+
+      setStats({
+        totalNotes: noteCount || 0,
+        totalQuizzes: 0,
+      });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 18) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  // Helper to format date
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <ScrollView
-        className="flex-1 bg-background"
-        contentContainerClassName="p-4 gap-4"
+        className="flex-1 px-5"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              loadDashboardData();
+            }}
+          />
+        }
       >
-        <View className="flex-row justify-between items-center">
+        {/* HEADER SECTION */}
+        <View className="flex-row justify-between items-center mt-4 mb-6">
           <View>
-            <Text className="text-lg font-medium text-muted-foreground">
-              {greeting},
+            <Text className="text-muted-foreground text-sm font-medium">
+              {getGreeting()},
             </Text>
-            <Text className="text-3xl font-bold text-foreground">
-              {user?.user_metadata?.full_name?.split(" ")[0] || "Student"}
+            <Text className="text-2xl font-bold text-foreground">
+              {user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                user?.email?.split("@")[0] ||
+                "Scholar"}{" "}
+              👋
             </Text>
           </View>
-          <View className="w-12 h-12 bg-primary/10 rounded-full items-center justify-center border border-primary/20">
-            <User size={24} color="#7c3aed" />
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/settings")}
+            className="bg-primary/10 w-10 h-10 rounded-full items-center justify-center"
+          >
+            {/* Initials Avatar */}
+            <Text className="text-primary font-bold text-lg">
+              {(
+                user?.user_metadata?.full_name?.[0] ||
+                user?.email?.[0] ||
+                "U"
+              ).toUpperCase()}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* QUICK STATS CARD */}
+        <View className="flex-row gap-3 mb-8">
+          <View className="flex-1 bg-card border border-border p-4 rounded-2xl shadow-sm">
+            <View className="bg-blue-100 w-8 h-8 rounded-full items-center justify-center mb-2">
+              <BookOpen size={16} className="text-blue-700" />
+            </View>
+            <Text className="text-2xl font-bold text-foreground">
+              {stats.totalNotes}
+            </Text>
+            <Text className="text-muted-foreground text-xs">
+              Total Study Items
+            </Text>
           </View>
+
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/notes")}
+            className="flex-1 bg-primary p-4 rounded-2xl shadow-md shadow-primary/20 justify-between"
+          >
+            <View className="bg-white/20 w-8 h-8 rounded-full items-center justify-center mb-2">
+              <Sparkles size={16} color="white" />
+            </View>
+            <View>
+              <Text className="text-white font-bold text-lg">New Session</Text>
+              <Text className="text-white/80 text-xs">
+                Generate Summary & Quiz
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
-        {/* Dynamic Daily Insight */}
-        <Card className="bg-primary border-0">
-          <CardContent className="p-4 flex-row items-start gap-3">
-            <View className="p-2 bg-primary-foreground/20 rounded-lg">
-              <Sparkles size={20} color="#ffffff" />
-            </View>
-            <View className="flex-1">
-              <Text className="font-semibold text-sm text-primary-foreground">
-                Daily Insight
-              </Text>
-              <Text className="text-sm text-primary-foreground/90 mt-1">
-                {insight}
-              </Text>
-            </View>
-          </CardContent>
-        </Card>
-
-        <View className="flex-row gap-3">
-          <StatsCard
-            icon={Clock}
-            value="2h 15m"
-            label="Focus"
-            color="#7c3aed"
-            bg="bg-purple-100 dark:bg-purple-900/40"
-          />
-          <StatsCard
-            icon={CheckCircle2}
-            value={7}
-            label="Done"
-            color="#2563eb"
-            bg="bg-blue-100 dark:bg-blue-900/40"
-          />
-          <StatsCard
-            icon={Flame}
-            value={12}
-            label="Streak"
-            color="#ea580c"
-            bg="bg-orange-100 dark:bg-orange-900/40"
-          />
+        {/* RECENT ACTIVITY SECTION */}
+        <View className="flex-row justify-between items-center mb-4">
+          <Text className="text-lg font-bold text-foreground">
+            Recent Activity
+          </Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/library")}>
+            <Text className="text-primary text-sm font-medium">See All</Text>
+          </TouchableOpacity>
         </View>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Weekly Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <View className="h-32 bg-muted/20 rounded-md items-center justify-center">
-              <Text className="text-muted-foreground">
-                Chart Implementation Pending
-              </Text>
-            </View>
-          </CardContent>
-        </Card>
+        {loading ? (
+          <ActivityIndicator size="small" color="#7c3aed" className="mt-10" />
+        ) : recentNotes.length === 0 ? (
+          // Empty State
+          <View className="items-center justify-center py-10 bg-muted/20 rounded-2xl border-dashed border border-border">
+            <Brain
+              size={40}
+              className="text-muted-foreground mb-3 opacity-50"
+            />
+            <Text className="text-muted-foreground font-medium">
+              No study sessions yet.
+            </Text>
+            <Text className="text-muted-foreground text-xs text-center mt-1 px-10">
+              Go to the AI Studio tab to create your first summary or quiz!
+            </Text>
+          </View>
+        ) : (
+          // List of Recent Items
+          <View className="gap-3 pb-20">
+            {recentNotes.map((note) => (
+              <TouchableOpacity
+                key={note.id}
+                onPress={() => router.push(`/note/${note.id}`)}
+                className="bg-card p-4 rounded-xl border border-border flex-row items-center gap-4 shadow-sm"
+              >
+                <View
+                  className={`w-12 h-12 rounded-xl items-center justify-center ${note.title.includes("Quiz") ? "bg-purple-100" : "bg-blue-100"}`}
+                >
+                  {note.title.includes("Quiz") ? (
+                    <Brain size={20} className="text-purple-700" />
+                  ) : (
+                    <FileText size={20} className="text-blue-700" />
+                  )}
+                </View>
+
+                <View className="flex-1">
+                  <Text
+                    className="font-bold text-foreground text-base"
+                    numberOfLines={1}
+                  >
+                    {note.title}
+                  </Text>
+                  <View className="flex-row items-center mt-1">
+                    <Clock size={12} className="text-muted-foreground mr-1" />
+                    <Text className="text-xs text-muted-foreground">
+                      {formatDate(note.created_at)}
+                    </Text>
+                  </View>
+                </View>
+
+                <ChevronRight
+                  size={18}
+                  className="text-muted-foreground opacity-50"
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

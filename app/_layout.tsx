@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import * as ScreenCapture from 'expo-screen-capture';
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import {
@@ -40,6 +41,10 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
   const { colorScheme } = useColorScheme();
+
+  useEffect(() => {
+    ScreenCapture.allowScreenCaptureAsync(); 
+  }, []);
 
   useEffect(() => {
     if (loading) return;
